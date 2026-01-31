@@ -1,0 +1,5 @@
+node_modules
+dist
+.DS_Store
+.cursor/skills
+.github/copilot-instructions.md

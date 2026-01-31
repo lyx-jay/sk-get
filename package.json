@@ -1,0 +1,32 @@
+{
+  "name": "sk-get",
+  "version": "1.1.0",
+  "type": "module",
+  "bin": {
+    "sk-get": "./bin/skill-get.js",
+    "sg": "./bin/skill-get.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "start": "node src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "CLI tool to manage AI Agent Skills via GitHub API",
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "conf": "^15.0.2",
+    "enquirer": "^2.4.1",
+    "fs-extra": "^11.3.3"
+  },
+  "devDependencies": {
+    "@types/conf": "^2.1.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^25.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
