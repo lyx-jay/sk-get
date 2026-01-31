@@ -1,124 +1,124 @@
 # sk-get
 
-[English](./README_EN.md) | 简体中文
+English | [简体中文](./README_CN.md)
 
-一个简单高效的 CLI 工具，用于通过 GitHub API 从指定的仓库管理并添加 AI Agent Skills 到 Cursor、Claude 和 VSCode 中。
+A simple and efficient CLI tool to manage and add AI Agent Skills to Cursor, Claude, and VSCode via GitHub API.
 
-## 功能
+## Features
 
-- **状态概览**: `sg status` 一眼查看当前环境及已安装技能。
-- **多仓库管理**: 支持配置多个 Skill 仓库，并通过交互式菜单自由切换。
-- **交互式操作**: `add`、`rm`、`repo use` 等命令在缺失参数时自动进入交互模式。
-- **多平台支持**: 支持 Cursor (本地/全局)、Claude (本地/全局) 和 VSCode。
-- **GitHub API 驱动**: 快速获取内容，无需克隆整个仓库。
-- **本地缓存**: 自动缓存技能列表，支持离线查看。
+- **Status Overview**: `sg status` gives an immediate view of your active repo and installed skills.
+- **Multi-Repo Management**: Configure multiple skill repositories and switch between them easily.
+- **Interactive Operations**: Commands like `add`, `rm`, and `repo use` automatically enter interactive mode if arguments are missing.
+- **Multi-Platform Support**: Supports Cursor (Local/Global), Claude (Local/Global), and VSCode.
+- **GitHub API Driven**: Fast content retrieval without the need to clone the entire repository.
+- **Local Caching**: Automatically caches skill lists for offline viewing.
 
-## 安装
+## Installation
 
 ```bash
 npm install -g sk-get
 ```
 
-安装后，你可以使用 `sk-get` 或简写 `sg` 命令。
+After installation, you can use the `sk-get` or the shorthand `sg` command.
 
-## 常用命令
+## Common Commands
 
-### 状态查看 (Status)
+### Status
 
 ```bash
 sg status
 ```
 
-显示当前激活的仓库、配置的仓库总数，以及在各个平台（Cursor, Claude, VSCode）已安装的技能列表。
+Displays the active repository, total number of configured repositories, and a list of installed skills across all platforms.
 
-### 仓库管理 (Repo)
+### Repository Management (Repo)
 
 ```bash
-# 添加仓库
+# Add a repository
 sg repo add <repository-url>
 
-# 列出仓库
+# List all repositories
 sg repo ls
 
-# 切换激活仓库 (交互式)
+# Switch active repository (Interactive)
 sg repo use
 
-# 移除仓库 (支持交互)
+# Remove a repository (Interactive)
 sg repo rm
 ```
 
-### 技能管理 (Skill)
+### Skill Management
 
-#### 列出技能 (List)
+#### List Skills
 ```bash
-# 查看当前激活仓库的远程技能列表
+# List skills in the currently active repository
 sg ls
 
-# 交互式切换仓库并查看其技能
+# Interactively switch repository and list its skills
 sg ls -r
 ```
 
-#### 添加技能 (Add)
-`sg add` 用于将远程仓库中的技能安装到本地或全局环境。
+#### Add Skill
+`sg add` is used to install skills from a remote repository to your local or global environment.
 
-- **交互模式 (推荐)**:
-  直接输入 `sg add`，程序将引导你选择技能和目标平台。
-- **命令行模式**:
+- **Interactive Mode (Recommended)**:
+  Run `sg add` without arguments, and the tool will guide you through selecting a skill and target platform.
+- **Command Line Mode**:
   `sg add <skill-name> <platform> [options]`
 
-**参数说明:**
-- `skill-name`: 远程仓库 `skills/` 目录下的文件夹名称。
-- `platform`: 目标平台，可选值为 `cursor`, `claude`, `vscode`。
+**Arguments:**
+- `skill-name`: The folder name under the `skills/` directory in the remote repository.
+- `platform`: Target platform. Choices: `cursor`, `claude`, `vscode`.
 
-**选项:**
-- `-g, --global`: 安装到系统全局目录。仅适用于 `cursor` 和 `claude`。
+**Options:**
+- `-g, --global`: Install to the system global directory. Only applicable for `cursor` and `claude`.
 
-**示例:**
+**Examples:**
 ```bash
-# 交互式添加
+# Interactive add
 sg add
 
-# 安装 git-commit 到当前项目的 Cursor 目录 (.cursor/skills/)
+# Install git-commit to the current project's Cursor directory (.cursor/skills/)
 sg add git-commit cursor
 
-# 全局安装 git-commit 到 Cursor 目录 (~/.cursor/skills/)
+# Install git-commit globally to Cursor (~/.cursor/skills/)
 sg add git-commit cursor --global
 
-# 添加 hello-world 到当前项目的 VSCode 指令文件 (.github/copilot-instructions.md)
+# Add hello-world to VSCode instructions (.github/copilot-instructions.md)
 sg add hello-world vscode
 ```
 
-#### 移除技能 (Remove)
-`sg rm` 用于移除已安装的技能。
+#### Remove Skill
+`sg rm` is used to remove installed skills.
 
-- **交互模式 (推荐)**:
-  直接输入 `sg rm`，程序会先让你选择平台，然后**自动扫描**该平台已安装的技能供你选择删除。
-- **命令行模式**:
+- **Interactive Mode (Recommended)**:
+  Run `sg rm` without arguments. You will be prompted to select a platform, and the tool will **automatically scan** for installed skills for you to choose from.
+- **Command Line Mode**:
   `sg rm <skill-name> <platform> [options]`
 
-**示例:**
+**Examples:**
 ```bash
-# 交互式移除
+# Interactive remove
 sg rm
 
-# 移除本地 Cursor 的 git-commit 技能
+# Remove git-commit from local Cursor
 sg rm git-commit cursor
 
-# 移除全局 Cursor 的技能
+# Remove git-commit from global Cursor
 sg rm git-commit cursor --global
 ```
 
-## 平台支持细节
+## Platform Details
 
-| 平台 | 默认路径 (Local) | 全局路径 (Global `-g`) | 说明 |
+| Platform | Default Path (Local) | Global Path (Global `-g`) | Description |
 | :--- | :--- | :--- | :--- |
-| **Cursor** | `.cursor/skills/` | `~/.cursor/skills/` | 整个文件夹拷贝 |
-| **Claude** | `.claude/skills/` | `~/.claude/skills/` | 整个文件夹拷贝 |
-| **VSCode** | `.github/copilot-instructions.md` | 不支持 | 将 `SKILL.md` 内容追加到文件末尾 |
+| **Cursor** | `.cursor/skills/` | `~/.cursor/skills/` | Copies the entire folder |
+| **Claude** | `.claude/skills/` | `~/.claude/skills/` | Copies the entire folder |
+| **VSCode** | `.github/copilot-instructions.md` | Not Supported | Appends `SKILL.md` content to the file |
 
-## 仓库结构要求
+## Repository Structure Requirements
 
-你的 Skills 仓库应遵循以下结构：
+Your Skills repository should follow this structure:
 
 ```text
 .
@@ -129,8 +129,8 @@ sg rm git-commit cursor --global
         └── SKILL.md
 ```
 
-每个 Skill 文件夹必须包含一个 `SKILL.md` 文件。
+Each skill folder must contain a `SKILL.md` file.
 
-## 许可证
+## License
 
 ISC
