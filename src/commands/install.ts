@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 import enquirer from 'enquirer';
-import { fetchRepoContents, downloadFile, GitHubContent } from '../utils/git.js';
+import { fetchRepoContents, downloadFile, RepoContent } from '../utils/git.js';
 import {
   getLocalCursorSkillsDir,
   getGlobalCursorSkillsDir,
@@ -11,11 +11,11 @@ import {
   getVscodeInstructionsPath,
 } from '../utils/paths.js';
 
-async function downloadDirectory(contents: GitHubContent[], targetDir: string, repoUrlOverride?: string) {
+async function downloadDirectory(contents: RepoContent[], targetDir: string, repoUrlOverride?: string) {
   for (const item of contents) {
     const targetPath = path.join(targetDir, item.name);
-    if (item.type === 'file' && item.download_url) {
-      const content = await downloadFile(item.download_url);
+    if (item.type === 'file' && item.downloadUrl) {
+      const content = await downloadFile(item.downloadUrl);
       await fs.outputFile(targetPath, content);
     } else if (item.type === 'dir') {
       const subContents = await fetchRepoContents(item.path, repoUrlOverride);
@@ -106,12 +106,12 @@ export async function installCommand(
       const vscodePath = getVscodeInstructionsPath();
       const skillMdFile = contents.find(f => f.name === 'SKILL.md');
       
-      if (!skillMdFile || !skillMdFile.download_url) {
+      if (!skillMdFile || !skillMdFile.downloadUrl) {
         console.error(chalk.red(`Error: SKILL.md not found in skill "${selectedSkill}".`));
         return;
       }
 
-      const skillContent = await downloadFile(skillMdFile.download_url);
+      const skillContent = await downloadFile(skillMdFile.downloadUrl);
       await fs.ensureDir(path.dirname(vscodePath));
       
       let existingContent = '';
