@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-02-01
+### Added
+- **Skill Tracing**: Enhanced skill tracing and configuration import/export functionality.
+
 ## [1.1.0] - 2026-02-01
 ### Added
 - **Config Management**: Added config export and import functionality.

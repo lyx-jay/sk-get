@@ -1,6 +1,6 @@
 {
   "name": "sk-get",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "bin": {
     "sk-get": "./bin/skill-get.js",
