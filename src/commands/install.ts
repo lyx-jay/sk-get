@@ -161,13 +161,23 @@ export async function installCommand(
         const prompt = new MultiSelect({
           name: 'platforms',
           message: 'Select target platform(s):',
-          choices: detected.map(d => ({
-            name: d.id,
-            message: d.isInstalled ? d.name : `${d.name} ${chalk.dim('(not detected)')}`,
-            hint: d.isInstalled ? chalk.green('detected') : ''
-          })),
+          choices: detected
+            .filter(d => d.isInstalled) // 仅显示已安装的平台
+            .map(d => ({
+              name: d.id,
+              message: d.name
+            })),
           footer: chalk.dim('(Space to select, Enter to confirm)')
         });
+        
+        // 如果一个已安装平台都没有检测到，则退回到显示所有选项，但标记未检测到
+        if (prompt.options.choices.length === 0) {
+          prompt.options.choices = detected.map(d => ({
+            name: d.id,
+            message: `${d.name} ${chalk.dim('(not detected)')}`
+          }));
+        }
+
         selectedPlatforms = await prompt.run();
       }
     }
