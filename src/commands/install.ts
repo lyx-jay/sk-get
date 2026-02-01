@@ -10,7 +10,7 @@ import {
   getGlobalClaudeSkillsDir,
   getVscodeInstructionsPath,
 } from '../utils/paths.js';
-import { getAllInstalledSkills } from '../utils/installed.js';
+import { getAllInstalledSkillsWithLocations } from '../utils/installed.js';
 
 async function downloadDirectory(contents: RepoContent[], targetDir: string, repoUrlOverride?: string) {
   for (const item of contents) {
@@ -47,19 +47,22 @@ export async function installCommand(
         return;
       }
 
-      // 获取已安装技能列表
-      const installedSkills = await getAllInstalledSkills();
+      // 获取已安装技能及其位置
+      const installedInfo = await getAllInstalledSkillsWithLocations();
 
       const { Select } = enquirer as any;
       const skillPrompt = new Select({
         name: 'skill',
         message: 'Select a skill to add:',
-        choices: skills.map(name => ({
-          name,
-          message: installedSkills.includes(name) 
-            ? `${name} ${chalk.dim('(installed)')}` 
-            : name
-        }))
+        choices: skills.map(name => {
+          const locations = installedInfo[name];
+          return {
+            name,
+            message: locations 
+              ? `${name} ${chalk.dim(`(installed: ${locations.join(', ')})`)}` 
+              : name
+          };
+        })
       });
       selectedSkill = await skillPrompt.run();
     }
