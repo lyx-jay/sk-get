@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/logo.png" width="200" alt="sk-get logo">
+</p>
+
 # sk-get
 
 English | [简体中文](./README_CN.md)
