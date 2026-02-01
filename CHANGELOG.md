@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-01
+### Added
+- **Config Management**: Added config export and import functionality.
+- **Multi-Platform Support**: Auto-detect platforms and support multi-platform installation in `sg add`.
+- **Batch Operations**: Support multiple skill installation and removal in interactive mode.
+- **GitLab Support**: Added support for GitLab repositories.
+- **Installation Methods**: Added 'symbol link' (symlink) installation method for skills.
+- **UI Enhancements**: Show installation locations and `(installed)` status in interactive menus.
+- **Command Enhancements**: Enhanced `status` command and added `installed` command to view skills.
+
+### Changed
+- **Platform Detection**: Optimized platform choices to only show installed applications.
+- **Skill Selection**: Prevent selecting already installed skills during addition.
+- **Documentation**: Updated READMEs with latest features, added logos, and set English as default.
+
+### Fixed
+- **Compatibility**: Improved symlink compatibility for Cursor and Claude.
+- **Reliability**: Resolved issues with skill removal and detection.
+
 ## [1.0.3] - 2026-01-31
 ### Added
 - **GitHub API Integration**: Refactored core to use GitHub API for faster, lightweight skill retrieval without full repository cloning.
