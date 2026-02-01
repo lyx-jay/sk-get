@@ -28,7 +28,7 @@ async function downloadDirectory(contents: RepoContent[], targetDir: string, rep
   }
 }
 
-async function performInstallation(
+export async function performInstallation(
   skillName: string,
   platform: string,
   isGlobal: boolean,

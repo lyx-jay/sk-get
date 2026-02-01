@@ -55,6 +55,16 @@ sg repo use
 sg repo rm
 ```
 
+### Configuration Backup & Restore (Config)
+
+```bash
+# Export configuration and installed skills to sk-get-config.json
+sg config export [output-path]
+
+# Import configuration and optionally re-install skills
+sg config import [input-path]
+```
+
 ### Skill Management
 
 #### List Skills

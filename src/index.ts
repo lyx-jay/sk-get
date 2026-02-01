@@ -5,6 +5,7 @@ import { listCommand } from './commands/list.js';
 import { installCommand } from './commands/install.js';
 import { removeCommand } from './commands/remove.js';
 import { statusCommand } from './commands/status.js';
+import { exportConfig, importConfig } from './commands/config.js';
 import { 
   addRepo, 
   removeRepo, 
@@ -208,6 +209,25 @@ repo
     }
   });
 
+// Config commands
+const configCmd = program.command('config').description('Export or import configuration');
+
+configCmd
+  .command('export')
+  .description('Export current configuration and installed skills to a JSON file')
+  .argument('[output-path]', 'Path to save the JSON file (default: ./sk-get-config.json)')
+  .action(async (outputPath) => {
+    await exportConfig(outputPath);
+  });
+
+configCmd
+  .command('import')
+  .description('Import configuration from a JSON file and optionally install skills')
+  .argument('[input-path]', 'Path to the JSON config file (default: ./sk-get-config.json)')
+  .action(async (inputPath) => {
+    await importConfig(inputPath);
+  });
+
 // Main help page footer
 program.addHelpText('after', `
 ${chalk.bold('Common Usage Examples:')}
@@ -216,6 +236,8 @@ ${chalk.bold('Common Usage Examples:')}
   ${chalk.gray('$')} sg ls -r                  ${chalk.dim('# Switch repo and list skills interactively')}
   ${chalk.gray('$')} sg add                    ${chalk.dim('# Interactive skill installation')}
   ${chalk.gray('$')} sg rm                     ${chalk.dim('# Interactive skill removal')}
+  ${chalk.gray('$')} sg config export          ${chalk.dim('# Backup your setup')}
+  ${chalk.gray('$')} sg config import          ${chalk.dim('# Restore and install skills')}
 
 ${chalk.cyan('Note:')} Most commands enter ${chalk.bold('Interactive Mode')} when run without arguments, making it easier to use.
 `);

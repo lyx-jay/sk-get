@@ -55,6 +55,16 @@ sg repo use
 sg repo rm
 ```
 
+### 配置备份与恢复 (Config)
+
+```bash
+# 导出配置和已安装技能到 sk-get-config.json
+sg config export [output-path]
+
+# 导入配置并支持自动重新安装技能
+sg config import [input-path]
+```
+
 ### 技能管理 (Skill)
 
 #### 列出技能 (List)
