@@ -51,18 +51,26 @@ program
   .argument('[skill-name]', 'Name of the skill to install')
   .argument('[platform]', 'Target platform (choices: cursor, claude, vscode)')
   .option('-g, --global', 'Install to global directory (supported for cursor and claude)', false)
+  .option('-m, --method <method>', 'Installation method (choices: link, copy)', 'link')
   .addHelpText('after', `
 Available Platforms:
   ${chalk.cyan('cursor')}  - Install to Cursor skills directory
   ${chalk.cyan('claude')}  - Install to Claude skills directory
   ${chalk.cyan('vscode')}  - Append to .github/copilot-instructions.md
 
+Available Methods:
+  ${chalk.cyan('link')}    - (Default) Create a symbolic link to a central library.
+             Skills stay updated when you run 'add' again.
+  ${chalk.cyan('copy')}    - Copy files directly to the project.
+             Better for static snapshots or offline projects.
+
 Note:
   The ${chalk.yellow('--global')} flag only applies to ${chalk.cyan('cursor')} and ${chalk.cyan('claude')}.
 
 Examples:
   ${chalk.gray('$')} sg add                       ${chalk.dim('# Enter interactive installation')}
-  ${chalk.gray('$')} sg add git-commit cursor      ${chalk.dim('# Install to local Cursor')}
+  ${chalk.gray('$')} sg add git-commit cursor      ${chalk.dim('# Install via link (default)')}
+  ${chalk.gray('$')} sg add git-commit cursor -m copy ${chalk.dim('# Install via copy')}
   ${chalk.gray('$')} sg add hello-world vscode    ${chalk.dim('# Add to VSCode instructions file')}
   `)
   .action((skillName, platform, options) => {

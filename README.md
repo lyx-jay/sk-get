@@ -69,7 +69,7 @@ sg ls -r
 `sg add` is used to install skills from a remote repository to your local or global environment.
 
 - **Interactive Mode (Recommended)**:
-  Run `sg add` without arguments, and the tool will guide you through selecting a skill and target platform.
+  Run `sg add` without arguments, and the tool will guide you through selecting a skill, target platform, and installation method.
 - **Command Line Mode**:
   `sg add <skill-name> <platform> [options]`
 
@@ -79,20 +79,20 @@ sg ls -r
 
 **Options:**
 - `-g, --global`: Install to the system global directory. Only applicable for `cursor` and `claude`.
+- `-m, --method <method>`: Installation method. Choices: `link` (default), `copy`.
+  - `link`: Creates a symbolic link to a central library. Recommended as it allows skills to be updated centrally.
+  - `copy`: Creates a static physical copy of the skill in your project.
 
 **Examples:**
 ```bash
-# Interactive add
+# Interactive add (includes method selection)
 sg add
 
-# Install git-commit to the current project's Cursor directory (.cursor/skills/)
+# Install via link (default)
 sg add git-commit cursor
 
-# Install git-commit globally to Cursor (~/.cursor/skills/)
-sg add git-commit cursor --global
-
-# Add hello-world to VSCode instructions (.github/copilot-instructions.md)
-sg add hello-world vscode
+# Install via copy
+sg add git-commit cursor -m copy
 ```
 
 #### Remove Skill

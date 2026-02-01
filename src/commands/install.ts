@@ -2,15 +2,17 @@ import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 import enquirer from 'enquirer';
-import { fetchRepoContents, downloadFile, RepoContent } from '../utils/git.js';
+import { fetchRepoContents, downloadFile, RepoContent, parseRepoUrl } from '../utils/git.js';
 import {
   getLocalCursorSkillsDir,
   getGlobalCursorSkillsDir,
   getLocalClaudeSkillsDir,
   getGlobalClaudeSkillsDir,
   getVscodeInstructionsPath,
+  getLibraryDir,
 } from '../utils/paths.js';
 import { getAllInstalledSkillsWithLocations } from '../utils/installed.js';
+import { getRepoUrl } from '../utils/config.js';
 
 async function downloadDirectory(contents: RepoContent[], targetDir: string, repoUrlOverride?: string) {
   for (const item of contents) {
@@ -28,11 +30,12 @@ async function downloadDirectory(contents: RepoContent[], targetDir: string, rep
 export async function installCommand(
   skillName: string | undefined,
   platform: string | undefined,
-  options: { global: boolean }
+  options: { global: boolean, method?: string }
 ) {
   try {
     let selectedSkill = skillName;
     let selectedPlatform = platform;
+    let selectedMethod = options.method || 'link';
 
     // 1. 如果没有提供 skillName，进行交互式选择
     if (!selectedSkill) {
@@ -82,14 +85,29 @@ export async function installCommand(
       selectedPlatform = await platformPrompt.run();
     }
 
-    console.log(chalk.blue(`Adding skill "${selectedSkill}" to ${selectedPlatform}...`));
+    // 3. 如果是 Cursor 或 Claude，且没有显式提供 method，进行交互式选择
+    const isVscode = selectedPlatform!.toLowerCase() === 'vscode';
+    if (!isVscode && !options.method) {
+      const { Select } = enquirer as any;
+      const methodPrompt = new Select({
+        name: 'method',
+        message: 'Select installation method:',
+        choices: [
+          { name: 'link', message: 'Symbolic Link (Recommended - stays updated with library)' },
+          { name: 'copy', message: 'Copy (Static snapshot)' }
+        ],
+        default: 'link'
+      });
+      selectedMethod = await methodPrompt.run();
+    }
+
+    console.log(chalk.blue(`Adding skill "${selectedSkill}" to ${selectedPlatform} via ${selectedMethod}...`));
     
     // 获取该 skill 的内容
     const skillPath = `skills/${selectedSkill}`;
     const contents = await fetchRepoContents(skillPath);
 
     let targetDir = '';
-    let isVscode = false;
 
     switch (selectedPlatform!.toLowerCase()) {
       case 'cursor':
@@ -103,7 +121,7 @@ export async function installCommand(
           : getLocalClaudeSkillsDir();
         break;
       case 'vscode':
-        isVscode = true;
+        // VSCode doesn't support symlink/copy, it's always an append
         break;
       default:
         console.error(
@@ -142,9 +160,33 @@ export async function installCommand(
       }
     } else {
       const targetSkillDir = path.join(targetDir, selectedSkill!);
-      await fs.ensureDir(targetSkillDir);
-      await downloadDirectory(contents, targetSkillDir);
-      console.log(chalk.green(`Successfully added skill "${selectedSkill}" to ${targetSkillDir}`));
+      await fs.ensureDir(targetDir);
+
+      if (selectedMethod === 'link') {
+        const repoUrl = getRepoUrl();
+        const { owner, repo } = parseRepoUrl(repoUrl);
+        const librarySkillDir = path.join(getLibraryDir(), owner, repo, 'skills', selectedSkill!);
+        
+        // 1. 下载到 Library
+        console.log(chalk.dim(`Updating skill library at ${librarySkillDir}...`));
+        await fs.ensureDir(librarySkillDir);
+        await downloadDirectory(contents, librarySkillDir, repoUrl);
+
+        // 2. 创建 Symlink
+        if (await fs.pathExists(targetSkillDir)) {
+          await fs.remove(targetSkillDir); // Remove existing copy or link
+        }
+        await fs.ensureSymlink(librarySkillDir, targetSkillDir, 'dir');
+        console.log(chalk.green(`Successfully linked skill "${selectedSkill}" to ${targetSkillDir}`));
+      } else {
+        // Copy method
+        if (await fs.pathExists(targetSkillDir)) {
+          await fs.remove(targetSkillDir);
+        }
+        await fs.ensureDir(targetSkillDir);
+        await downloadDirectory(contents, targetSkillDir);
+        console.log(chalk.green(`Successfully added skill "${selectedSkill}" to ${targetSkillDir}`));
+      }
     }
   } catch (error: any) {
     if (error === '') return; // Handle Enquirer cancellation

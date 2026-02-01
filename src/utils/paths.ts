@@ -14,3 +14,5 @@ export const getGlobalClaudeSkillsDir = () => path.join(getHomeDir(), '.claude',
 export const getVscodeInstructionsPath = (cwd: string = process.cwd()) => path.join(cwd, '.github', 'copilot-instructions.md');
 
 export const getCacheDir = () => path.join(getHomeDir(), '.cache', 'sk-get');
+
+export const getLibraryDir = () => path.join(getHomeDir(), '.sk-get', 'library');

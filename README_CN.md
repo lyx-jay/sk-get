@@ -69,7 +69,7 @@ sg ls -r
 `sg add` 用于将远程仓库中的技能安装到本地或全局环境。
 
 - **交互模式 (推荐)**:
-  直接输入 `sg add`，程序将引导你选择技能和目标平台。
+  直接输入 `sg add`，程序将引导你选择技能、目标平台以及安装方式。
 - **命令行模式**:
   `sg add <skill-name> <platform> [options]`
 
@@ -79,19 +79,22 @@ sg ls -r
 
 **选项:**
 - `-g, --global`: 安装到系统全局目录。仅适用于 `cursor` 和 `claude`。
+- `-m, --method <method>`: 安装方式。可选值为 `link` (默认), `copy`。
+  - `link`: 创建指向中央库的软链接（Symbolic Link）。推荐使用，方便统一更新。
+  - `copy`: 直接复制文件到项目中。适合需要静态快照的项目。
 
 **示例:**
 ```bash
-# 交互式添加
+# 交互式添加 (包含安装方式选择)
 sg add
 
-# 安装 git-commit 到当前项目的 Cursor 目录 (.cursor/skills/)
+# 通过软链接安装 (默认)
 sg add git-commit cursor
 
-# 全局安装 git-commit 到 Cursor 目录 (~/.cursor/skills/)
-sg add git-commit cursor --global
+# 通过复制方式安装
+sg add git-commit cursor -m copy
 
-# 添加 hello-world 到当前项目的 VSCode 指令文件 (.github/copilot-instructions.md)
+# 添加 hello-world 到当前项目的 VSCode 指令文件
 sg add hello-world vscode
 ```
 
