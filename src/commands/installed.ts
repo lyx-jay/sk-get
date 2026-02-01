@@ -7,19 +7,7 @@ import {
   getGlobalClaudeSkillsDir,
   getVscodeInstructionsPath,
 } from '../utils/paths.js';
-
-async function getInstalledSkills(targetDir: string): Promise<string[]> {
-  if (!(await fs.pathExists(targetDir))) return [];
-  const entries = await fs.readdir(targetDir, { withFileTypes: true });
-  return entries.filter(e => e.isDirectory()).map(e => e.name);
-}
-
-async function getVscodeSkills(vscodePath: string): Promise<string[]> {
-  if (!(await fs.pathExists(vscodePath))) return [];
-  const content = await fs.readFile(vscodePath, 'utf8');
-  const matches = content.matchAll(/^# Skill: (.+)$/gm);
-  return Array.from(matches).map(m => m[1].trim());
-}
+import { getInstalledSkills, getVscodeSkills } from '../utils/installed.js';
 
 export async function installedCommand() {
   try {
