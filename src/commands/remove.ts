@@ -9,7 +9,7 @@ import {
   getGlobalClaudeSkillsDir,
   getVscodeInstructionsPath,
 } from '../utils/paths.js';
-import { getInstalledSkills, getVscodeSkills } from '../utils/installed.js';
+import { getInstalledSkills, getVscodeSkills, getAllInstalledSkillsWithLocations } from '../utils/installed.js';
 
 export async function removeCommand(
   skillName: string | undefined,
@@ -18,84 +18,74 @@ export async function removeCommand(
 ) {
   try {
     let selectedPlatform = platform;
+    let selectedSkill = skillName;
+    let isGlobal = options.global;
 
-    // 1. 如果没有提供 platform，进行交互式选择
-    if (!selectedPlatform) {
+    // 1. 如果完全没有提供参数，列出所有已安装的技能及其位置，供用户直接选择
+    if (!selectedSkill && !selectedPlatform) {
+      const installedInfo = await getAllInstalledSkillsWithLocations();
+      const choices: any[] = [];
+
+      for (const [name, locations] of Object.entries(installedInfo)) {
+        locations.forEach(loc => {
+          choices.push({
+            name: `${name}|${loc}`,
+            message: `${name} ${chalk.dim(`(${loc})`)}`,
+            value: { name, location: loc }
+          });
+        });
+      }
+
+      if (choices.length === 0) {
+        console.log(chalk.yellow('No installed skills found.'));
+        return;
+      }
+
       const { Select } = enquirer as any;
-      const platformPrompt = new Select({
-        name: 'platform',
-        message: 'Select platform to remove skill from:',
-        choices: [
-          { name: 'cursor', message: 'Cursor' },
-          { name: 'claude', message: 'Claude' },
-          { name: 'vscode', message: 'VSCode' }
-        ]
+      const prompt = new Select({
+        name: 'selection',
+        message: 'Select a skill to remove:',
+        choices: choices
       });
-      selectedPlatform = await platformPrompt.run();
+
+      const selection = await prompt.run();
+      const [name, loc] = selection.split('|');
+      selectedSkill = name;
+      
+      // 解析位置
+      if (loc === 'Cursor') { selectedPlatform = 'cursor'; isGlobal = false; }
+      else if (loc === 'Cursor (Global)') { selectedPlatform = 'cursor'; isGlobal = true; }
+      else if (loc === 'Claude') { selectedPlatform = 'claude'; isGlobal = false; }
+      else if (loc === 'Claude (Global)') { selectedPlatform = 'claude'; isGlobal = true; }
+      else if (loc === 'VSCode') { selectedPlatform = 'vscode'; isGlobal = false; }
     }
 
+    // 后续逻辑保持不变，但使用确定的 selectedPlatform, selectedSkill, isGlobal
     let targetDir = '';
     let isVscode = false;
 
     switch (selectedPlatform!.toLowerCase()) {
       case 'cursor':
-        targetDir = options.global ? getGlobalCursorSkillsDir() : getLocalCursorSkillsDir();
+        targetDir = isGlobal ? getGlobalCursorSkillsDir() : getLocalCursorSkillsDir();
         break;
       case 'claude':
-        targetDir = options.global ? getGlobalClaudeSkillsDir() : getLocalClaudeSkillsDir();
+        targetDir = isGlobal ? getGlobalClaudeSkillsDir() : getLocalClaudeSkillsDir();
         break;
       case 'vscode':
         isVscode = true;
         break;
       default:
-        console.error(
-          chalk.red(
-            `Error: Unsupported platform "${selectedPlatform}". Use cursor, claude, or vscode.`
-          )
-        );
+        console.error(chalk.red(`Error: Unsupported platform "${selectedPlatform}".`));
         return;
-    }
-
-    let selectedSkill = skillName;
-
-    // 2. 如果没有提供 skillName，扫描已安装的 skill 并交互式选择
-    if (!selectedSkill) {
-      let installedSkills: string[] = [];
-      if (isVscode) {
-        installedSkills = await getVscodeSkills(getVscodeInstructionsPath());
-      } else {
-        installedSkills = await getInstalledSkills(targetDir);
-      }
-
-      if (installedSkills.length === 0) {
-        console.log(chalk.yellow(`No skills found on ${selectedPlatform} (${options.global ? 'global' : 'local'}).`));
-        return;
-      }
-
-      const { Select } = enquirer as any;
-      const skillPrompt = new Select({
-        name: 'skill',
-        message: `Select a skill to remove from ${selectedPlatform}:`,
-        choices: installedSkills
-      });
-      selectedSkill = await skillPrompt.run();
     }
 
     if (isVscode) {
       const vscodePath = getVscodeInstructionsPath();
-      
-      if (!(await fs.pathExists(vscodePath))) {
-        console.log(chalk.yellow(`VSCode instructions file not found at ${vscodePath}`));
-        return;
-      }
+      if (!(await fs.pathExists(vscodePath))) return;
 
       const content = await fs.readFile(vscodePath, 'utf8');
       const skillHeader = `# Skill: ${selectedSkill}`;
-      
-      if (!content.includes(skillHeader)) {
-        console.log(chalk.yellow(`Skill "${selectedSkill}" not found in VSCode instructions.`));
-        return;
-      }
+      if (!content.includes(skillHeader)) return;
 
       const lines = content.split('\n');
       let startIndex = -1;
@@ -127,24 +117,21 @@ export async function removeCommand(
           console.log(chalk.green(`Removed empty instructions file: ${vscodePath}`));
         } else {
           await fs.writeFile(vscodePath, newContent);
-          console.log(chalk.green(`Successfully removed skill "${selectedSkill}" from ${vscodePath}`));
+          console.log(chalk.green(`Successfully removed skill "${selectedSkill}" from VSCode`));
         }
       }
     } else {
       const targetSkillDir = path.join(targetDir, selectedSkill!);
-      
       if (!(await fs.pathExists(targetSkillDir))) {
         console.log(chalk.yellow(`Skill "${selectedSkill}" is not installed at ${targetSkillDir}`));
         return;
       }
 
       await fs.remove(targetSkillDir);
-      console.log(chalk.green(`Successfully removed skill "${selectedSkill}" from ${targetSkillDir}`));
+      console.log(chalk.green(`Successfully removed skill "${selectedSkill}" from ${selectedPlatform} ${isGlobal ? '(Global)' : ''}`));
       
       const remaining = await fs.readdir(targetDir);
-      if (remaining.length === 0) {
-        await fs.remove(targetDir);
-      }
+      if (remaining.length === 0) await fs.remove(targetDir);
     }
   } catch (error: any) {
     if (error === '') return;

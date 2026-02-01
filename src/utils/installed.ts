@@ -10,7 +10,7 @@ import {
 export async function getInstalledSkills(targetDir: string): Promise<string[]> {
   if (!(await fs.pathExists(targetDir))) return [];
   const entries = await fs.readdir(targetDir, { withFileTypes: true });
-  return entries.filter(e => e.isDirectory()).map(e => e.name);
+  return entries.filter(e => e.isDirectory() || e.isSymbolicLink()).map(e => e.name);
 }
 
 export async function getVscodeSkills(vscodePath: string): Promise<string[]> {
