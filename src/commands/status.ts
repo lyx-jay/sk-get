@@ -14,39 +14,52 @@ export async function statusCommand() {
   try {
     console.log(chalk.bold('\n--- sk-get Status ---\n'));
 
-    // Repository Info
+    // 1. Repositories
     const repos = getRepos();
     const activeRepo = getActiveRepoUrl();
-    console.log(chalk.cyan('Repository Configuration:'));
-    console.log(`  Active Repo: ${activeRepo ? chalk.green(activeRepo) : chalk.yellow('None')}`);
-    console.log(`  Total Configured: ${repos.length}\n`);
+    console.log(chalk.cyan('📦 Repositories:'));
+    if (repos.length === 0) {
+      console.log(chalk.dim('  No repositories configured. Use `sg repo add <url>` to add one.'));
+    } else {
+      repos.forEach((r: any) => {
+        if (r.url === activeRepo) {
+          console.log(chalk.green(`  * ${r.url} ${chalk.dim('(active)')}`));
+        } else {
+          console.log(`    ${r.url}`);
+        }
+      });
+    }
+    console.log('');
 
-    // Local Project Skills
-    console.log(chalk.cyan('Local Project Skills:'));
+    // 2. Local Project Skills
+    console.log(chalk.cyan('📍 Local (Current Project):'));
     const cursorLocal = await getInstalledSkills(getLocalCursorSkillsDir());
     const vscodeLocal = await getVscodeSkills(getVscodeInstructionsPath());
     const claudeLocal = await getInstalledSkills(getLocalClaudeSkillsDir());
 
-    if (cursorLocal.length === 0 && vscodeLocal.length === 0 && claudeLocal.length === 0) {
+    const hasLocal = cursorLocal.length > 0 || vscodeLocal.length > 0 || claudeLocal.length > 0;
+    if (!hasLocal) {
       console.log(chalk.dim('  No local skills detected.'));
     } else {
-      if (cursorLocal.length > 0) console.log(`  Cursor: ${cursorLocal.join(', ')}`);
-      if (vscodeLocal.length > 0) console.log(`  VSCode: ${vscodeLocal.join(', ')}`);
-      if (claudeLocal.length > 0) console.log(`  Claude: ${claudeLocal.join(', ')}`);
+      cursorLocal.forEach(s => console.log(`  - ${s} ${chalk.dim('[Cursor]')}`));
+      vscodeLocal.forEach(s => console.log(`  - ${s} ${chalk.dim('[VSCode]')}`));
+      claudeLocal.forEach(s => console.log(`  - ${s} ${chalk.dim('[Claude]')}`));
     }
     console.log('');
 
-    // Global Skills
-    console.log(chalk.cyan('Global Skills:'));
+    // 3. Global Skills
+    console.log(chalk.cyan('🌍 Global:'));
     const cursorGlobal = await getInstalledSkills(getGlobalCursorSkillsDir());
     const claudeGlobal = await getInstalledSkills(getGlobalClaudeSkillsDir());
 
-    if (cursorGlobal.length === 0 && claudeGlobal.length === 0) {
+    const hasGlobal = cursorGlobal.length > 0 || claudeGlobal.length > 0;
+    if (!hasGlobal) {
       console.log(chalk.dim('  No global skills detected.'));
     } else {
-      if (cursorGlobal.length > 0) console.log(`  Cursor (Global): ${cursorGlobal.join(', ')}`);
-      if (claudeGlobal.length > 0) console.log(`  Claude (Global): ${claudeGlobal.join(', ')}`);
+      cursorGlobal.forEach(s => console.log(`  - ${s} ${chalk.dim('[Cursor (Global)]')}`));
+      claudeGlobal.forEach(s => console.log(`  - ${s} ${chalk.dim('[Claude (Global)]')}`));
     }
+
     console.log('\n---------------------\n');
   } catch (error: any) {
     console.error(chalk.red(`Error: ${error.message}`));

@@ -5,7 +5,6 @@ import { listCommand } from './commands/list.js';
 import { installCommand } from './commands/install.js';
 import { removeCommand } from './commands/remove.js';
 import { statusCommand } from './commands/status.js';
-import { installedCommand } from './commands/installed.js';
 import { 
   addRepo, 
   removeRepo, 
@@ -36,12 +35,6 @@ program
   .command('status')
   .description('Show current environment status (active repo and installed skills overview)')
   .action(statusCommand);
-
-program
-  .command('installed')
-  .alias('ins')
-  .description('List all installed skills in detail')
-  .action(installedCommand);
 
 program
   .command('list')

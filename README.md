@@ -36,15 +36,7 @@ After installation, you can use the `sk-get` or the shorthand `sg` command.
 sg status
 ```
 
-Displays the active repository, total number of configured repositories, and a list of installed skills across all platforms.
-
-### Installed Skills
-
-```bash
-sg installed  # or sg ins
-```
-
-Lists all installed skills in the current project and global environment in detail.
+Displays the active repository, configured repositories, and a detailed list of installed skills across all platforms.
 
 ### Repository Management (Repo)
 
