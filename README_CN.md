@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="./assets/logo.png" width="200" alt="sk-get logo">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-dark.png">
+    <img alt="sk-get logo" src="./assets/logo.png" width="200">
+  </picture>
 </p>
 
 # sk-get
