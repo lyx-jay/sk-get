@@ -9,16 +9,17 @@
 
 [English](./README.md) | 简体中文
 
-一个简单高效的 CLI 工具，用于通过 GitHub API 从指定的仓库管理并添加 AI Agent Skills 到 Cursor、Claude 和 VSCode 中。
+一个简单高效的 CLI 工具，用于通过 GitHub/GitLab API 管理并添加 AI Agent Skills 到 Cursor、Claude 和 VSCode 中。
 
 ## 功能
 
-- **状态概览**: `sg status` 一眼查看当前环境及已安装技能。
-- **多仓库管理**: 支持配置多个 Skill 仓库，并通过交互式菜单自由切换。
-- **交互式操作**: `add`、`rm`、`repo use` 等命令在缺失参数时自动进入交互模式。
-- **多平台支持**: 支持 Cursor (本地/全局)、Claude (本地/全局) 和 VSCode。
-- **GitHub API 驱动**: 快速获取内容，无需克隆整个仓库。
-- **本地缓存**: 自动缓存技能列表，支持离线查看。
+- **状态概览**: `sg status` 一眼查看当前环境、活跃仓库及所有已安装技能。
+- **智能平台检测**: 自动识别本地安装的 Cursor、Claude 和 VSCode，简化选择流程。
+- **多仓库管理**: 支持配置多个 Skill 仓库（GitHub/GitLab），并可自由切换。
+- **交互式批量操作**: 支持一次性选择并安装/删除多个技能，支持同时安装到多个平台。
+- **软链接安装**: 默认通过 Symbolic Link 安装，支持通过中央库统一更新技能。
+- **跨平台支持**: 完美支持 Cursor (本地/全局)、Claude (本地/全局) 和 VSCode。
+- **GitHub & GitLab 驱动**: 快速获取内容，无需克隆整个仓库，支持私有库。
 
 ## 安装
 
@@ -36,21 +37,21 @@ npm install -g sk-get
 sg status
 ```
 
-显示当前激活的仓库、所有已配置的仓库列表，以及在各个平台（Cursor, Claude, VSCode）本地和全局已安装的技能详细列表。
+显示当前配置、活跃仓库以及在各个平台已安装的技能详细列表。
 
 ### 仓库管理 (Repo)
 
 ```bash
-# 添加仓库
+# 添加仓库 (支持 GitHub 和 GitLab)
 sg repo add <repository-url>
 
-# 列出仓库
+# 列出所有已配置仓库
 sg repo ls
 
-# 切换激活仓库 (交互式)
+# 切换当前活跃仓库 (交互式)
 sg repo use
 
-# 移除仓库 (支持交互)
+# 移除仓库 (支持交互选择)
 sg repo rm
 ```
 
@@ -58,7 +59,7 @@ sg repo rm
 
 #### 列出技能 (List)
 ```bash
-# 查看当前激活仓库的远程技能列表
+# 查看当前活跃仓库的技能列表
 sg ls
 
 # 交互式切换仓库并查看其技能
@@ -66,80 +67,50 @@ sg ls -r
 ```
 
 #### 添加技能 (Add)
-`sg add` 用于将远程仓库中的技能安装到本地或全局环境。
+`sg add` 支持极其灵活的批量安装和平台自适应。
 
 - **交互模式 (推荐)**:
-  直接输入 `sg add`，程序将引导你选择技能、目标平台以及安装方式。
+  直接输入 `sg add`，程序将**自动检测**本地平台并引导你完成多选。
+- **批量安装**:
+  支持一次勾选多个技能，并同时分发到多个平台。
 - **命令行模式**:
-  `sg add <skill-name> <platform> [options]`
+  `sg add <skill-names> <platforms> [options]`
 
 **参数说明:**
-- `skill-name`: 远程仓库 `skills/` 目录下的文件夹名称。
-- `platform`: 目标平台，可选值为 `cursor`, `claude`, `vscode`。
+- `skill-names`: 技能文件夹名称，支持逗号分隔 (如 `s1,s2`)。
+- `platforms`: 目标平台，支持逗号分隔 (如 `cursor,claude`)。
 
 **选项:**
-- `-g, --global`: 安装到系统全局目录。仅适用于 `cursor` 和 `claude`。
-- `-m, --method <method>`: 安装方式。可选值为 `link` (默认), `copy`。
-  - `link`: 创建指向中央库的软链接（Symbolic Link）。推荐使用，方便统一更新。
-  - `copy`: 直接复制文件到项目中。适合需要静态快照的项目。
+- `-g, --global`: 安装到系统全局目录。
+- `-m, --method <method>`: 安装方式，可选 `link` (默认) 或 `copy`。
 
 **示例:**
 ```bash
-# 交互式添加 (包含安装方式选择)
+# 交互式添加 (自动检测并支持多选)
 sg add
 
-# 通过软链接安装 (默认)
-sg add git-commit cursor
+# 同时安装多个技能到 Cursor
+sg add git-commit,vue cursor
 
-# 通过复制方式安装
-sg add git-commit cursor -m copy
-
-# 添加 hello-world 到当前项目的 VSCode 指令文件
-sg add hello-world vscode
+# 同时安装到多个平台
+sg add git-commit cursor,claude
 ```
 
 #### 移除技能 (Remove)
-`sg rm` 用于移除已安装的技能。
+`sg rm` 在交互模式下支持**多选批量删除**。
 
-- **交互模式 (推荐)**:
-  直接输入 `sg rm`，程序会先让你选择平台，然后**自动扫描**该平台已安装的技能供你选择删除。
+- **交互模式**:
+  直接输入 `sg rm`，扫描所有已安装实例并支持勾选删除。
 - **命令行模式**:
   `sg rm <skill-name> <platform> [options]`
 
-**示例:**
-```bash
-# 交互式移除
-sg rm
-
-# 移除本地 Cursor 的 git-commit 技能
-sg rm git-commit cursor
-
-# 移除全局 Cursor 的技能
-sg rm git-commit cursor --global
-```
-
 ## 平台支持细节
 
-| 平台 | 默认路径 (Local) | 全局路径 (Global `-g`) | 说明 |
+| 平台 | 默认路径 (Local) | 全局路径 (Global `-g`) | 实现说明 |
 | :--- | :--- | :--- | :--- |
-| **Cursor** | `.cursor/skills/` | `~/.cursor/skills/` | 整个文件夹拷贝 |
-| **Claude** | `.claude/skills/` | `~/.claude/skills/` | 整个文件夹拷贝 |
-| **VSCode** | `.github/copilot-instructions.md` | 不支持 | 将 `SKILL.md` 内容追加到文件末尾 |
-
-## 仓库结构要求
-
-你的 Skills 仓库应遵循以下结构：
-
-```text
-.
-└── skills/
-    ├── skill-name-1/
-    │   └── SKILL.md
-    └── skill-name-2/
-        └── SKILL.md
-```
-
-每个 Skill 文件夹必须包含一个 `SKILL.md` 文件。
+| **Cursor** | `.cursor/skills/` | `~/.cursor/skills/` | 真实目录 + 内部文件软链接 |
+| **Claude** | `.claude/skills/` | `~/.claude/skills/` | 真实目录 + 内部文件软链接 |
+| **VSCode** | `.github/copilot-instructions.md` | 不支持 | 将 `SKILL.md` 内容追加到文件 |
 
 ## 许可证
 
