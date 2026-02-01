@@ -63,7 +63,21 @@ export async function importConfig(inputPath: string | undefined) {
             // For 'append' (VSCode), we don't really have a method choice, it's just append.
             // But performInstallation handles it via platform check.
             const method = skill.method === 'append' ? 'link' : skill.method;
-            await performInstallation(skill.name, skill.platform, skill.global, method);
+            
+            // If skill has a repoUrl, we should ensure it's used for installation
+            if (skill.repoUrl) {
+              const originalActiveRepo = getActiveRepoUrl();
+              try {
+                setActiveRepoUrl(skill.repoUrl);
+                await performInstallation(skill.name, skill.platform, skill.global, method);
+              } finally {
+                if (originalActiveRepo) {
+                  setActiveRepoUrl(originalActiveRepo);
+                }
+              }
+            } else {
+              await performInstallation(skill.name, skill.platform, skill.global, method);
+            }
           } catch (e: any) {
             console.error(chalk.yellow(`! Failed to install skill "${skill.name}": ${e.message}`));
           }

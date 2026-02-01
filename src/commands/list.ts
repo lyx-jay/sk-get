@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import enquirer from 'enquirer';
 import { fetchRepoContents } from '../utils/git.js';
+import { getAllInstalledSkills } from '../utils/installed.js';
 import { 
   setCachedSkills, 
   getCachedSkills, 
@@ -60,9 +61,11 @@ export async function listCommand(options: { repo?: boolean }) {
     setCachedSkills(skills);
 
     // 4. 显示结果
+    const installedSkills = await getAllInstalledSkills();
     console.log(chalk.green('Available skills (Updated):'));
     skills.forEach((skill) => {
-      console.log(` - ${skill}`);
+      const isInstalled = installedSkills.includes(skill);
+      console.log(` - ${skill}${isInstalled ? chalk.dim(' (installed)') : ''}`);
     });
   } catch (error: any) {
     if (error === '') return; // Handle Enquirer cancellation (Ctrl+C)

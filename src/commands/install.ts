@@ -114,6 +114,18 @@ export async function performInstallation(
       }
       await fs.ensureDir(targetSkillDir);
       await downloadDirectory(contents, targetSkillDir);
+
+      // Save metadata for 'copy' method to allow source tracking
+      try {
+        const repoUrl = getRepoUrl();
+        await fs.writeJson(path.join(targetSkillDir, '.sk-get.json'), {
+          repoUrl,
+          installedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        // Silently ignore metadata write errors
+      }
+
       console.log(chalk.green(`Successfully added skill "${skillName}" to ${targetSkillDir}`));
     }
   }

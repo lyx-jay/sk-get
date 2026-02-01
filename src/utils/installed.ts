@@ -6,6 +6,7 @@ import {
   getLocalClaudeSkillsDir,
   getGlobalClaudeSkillsDir,
   getVscodeInstructionsPath,
+  getLibraryDir,
 } from './paths.js';
 
 export async function getInstalledSkills(targetDir: string): Promise<string[]> {
@@ -50,6 +51,7 @@ export interface DetailedInstalledInfo {
   platform: string;
   global: boolean;
   method: 'link' | 'copy' | 'append';
+  repoUrl?: string;
 }
 
 export async function getAllInstalledSkillsDetailed(): Promise<DetailedInstalledInfo[]> {
@@ -61,20 +63,51 @@ export async function getAllInstalledSkillsDetailed(): Promise<DetailedInstalled
     for (const entry of entries) {
       if (entry.isDirectory() || entry.isSymbolicLink()) {
         const fullPath = path.join(dir, entry.name);
-        // 检查目录内部是否存在软链接。目前的实现是：真实目录 + 内部文件软链接。
-        // 或者如果是旧版本可能是整个目录软链接。
         let method: 'link' | 'copy' = 'copy';
+        let repoUrl: string | undefined = undefined;
         
         const files = await fs.readdir(fullPath);
         if (files.length > 0) {
-          const firstFile = path.join(fullPath, files[0]);
-          const lstat = await fs.lstat(firstFile);
-          if (lstat.isSymbolicLink()) {
-            method = 'link';
+          // 1. Try to read from .sk-get.json (for 'copy' method or explicit metadata)
+          const metadataPath = path.join(fullPath, '.sk-get.json');
+          if (await fs.pathExists(metadataPath)) {
+            try {
+              const metadata = await fs.readJson(metadataPath);
+              if (metadata.repoUrl) {
+                repoUrl = metadata.repoUrl;
+              }
+            } catch (e) {
+              // Ignore metadata read errors
+            }
+          }
+
+          // 2. If no repoUrl yet, try to resolve from symlink (for 'link' method)
+          if (!repoUrl) {
+            const firstFile = path.join(fullPath, files[0]);
+            try {
+              const lstat = await fs.lstat(firstFile);
+              if (lstat.isSymbolicLink()) {
+                method = 'link';
+                const linkTarget = await fs.readlink(firstFile);
+                // linkTarget example: /Users/yxl/.sk-get/library/owner/repo/skills/skillName/file
+                const libraryDir = getLibraryDir();
+                if (linkTarget.startsWith(libraryDir)) {
+                  const relative = path.relative(libraryDir, linkTarget);
+                  const parts = relative.split(path.sep);
+                  if (parts.length >= 2) {
+                    const owner = parts[0];
+                    const repo = parts[1];
+                    repoUrl = `https://github.com/${owner}/${repo}`;
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore errors
+            }
           }
         }
         
-        result.push({ name: entry.name, platform, global, method });
+        result.push({ name: entry.name, platform, global, method, repoUrl });
       }
     }
   };
