@@ -132,7 +132,22 @@ export async function installCommand(
     let selectedPlatform = platform;
     let selectedMethod = options.method || 'link';
 
-    // 1. 获取技能列表
+    // 1. 如果没有提供 platform，进行交互式选择 (为了后面过滤已安装技能)
+    if (!selectedPlatform) {
+      const { Select } = enquirer as any;
+      const platformPrompt = new Select({
+        name: 'platform',
+        message: 'Select a target platform:',
+        choices: [
+          { name: 'cursor', message: 'Cursor' },
+          { name: 'claude', message: 'Claude' },
+          { name: 'vscode', message: 'VSCode' }
+        ]
+      });
+      selectedPlatform = await platformPrompt.run();
+    }
+
+    // 2. 获取技能列表
     if (skillName) {
       selectedSkills = skillName.split(',').map(s => s.trim()).filter(s => s !== '');
     } else {
@@ -147,44 +162,48 @@ export async function installCommand(
         return;
       }
 
+      // 获取当前平台的标识名
+      let targetLocationName = '';
+      const platformKey = selectedPlatform!.toLowerCase();
+      if (platformKey === 'cursor') {
+        targetLocationName = options.global ? 'Cursor (Global)' : 'Cursor';
+      } else if (platformKey === 'claude') {
+        targetLocationName = options.global ? 'Claude (Global)' : 'Claude';
+      } else if (platformKey === 'vscode') {
+        targetLocationName = 'VSCode';
+      }
+
       // 获取已安装技能及其位置
       const installedInfo = await getAllInstalledSkillsWithLocations();
 
       const { MultiSelect } = enquirer as any;
+      const skillChoices = skills.map(name => {
+        const locations = installedInfo[name] || [];
+        const isInstalledHere = locations.includes(targetLocationName);
+        
+        return {
+          name,
+          message: isInstalledHere 
+            ? `${name} ${chalk.dim(`(already installed)`)}` 
+            : locations.length > 0 
+              ? `${name} ${chalk.dim(`(installed in: ${locations.join(', ')})`)}`
+              : name,
+          disabled: isInstalledHere ? chalk.yellow('Already installed on this platform') : false
+        };
+      });
+
       const skillPrompt = new MultiSelect({
         name: 'skills',
-        message: 'Select skills to add (Space to select, Enter to confirm):',
-        choices: skills.map(name => {
-          const locations = installedInfo[name];
-          return {
-            name,
-            message: locations 
-              ? `${name} ${chalk.dim(`(installed: ${locations.join(', ')})`)}` 
-              : name
-          };
-        })
+        message: `Select skills to add to ${selectedPlatform}${options.global ? ' (Global)' : ''}:`,
+        choices: skillChoices,
+        footer: chalk.dim('(Space to select, Enter to confirm)')
       });
       selectedSkills = await skillPrompt.run();
     }
 
     if (selectedSkills.length === 0) {
-      console.log(chalk.yellow('No skills selected.'));
+      console.log(chalk.yellow('No new skills selected.'));
       return;
-    }
-
-    // 2. 如果没有提供 platform，进行交互式选择
-    if (!selectedPlatform) {
-      const { Select } = enquirer as any;
-      const platformPrompt = new Select({
-        name: 'platform',
-        message: 'Select a target platform:',
-        choices: [
-          { name: 'cursor', message: 'Cursor' },
-          { name: 'claude', message: 'Claude' },
-          { name: 'vscode', message: 'VSCode' }
-        ]
-      });
-      selectedPlatform = await platformPrompt.run();
     }
 
     // 3. 如果是 Cursor 或 Claude，且没有显式提供 method，进行交互式选择
