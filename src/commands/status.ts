@@ -12,7 +12,7 @@ import { getInstalledSkills, getVscodeSkills } from '../utils/installed.js';
 
 export async function statusCommand() {
   try {
-    console.log(chalk.bold('\n--- sk-get Status ---\n'));
+    console.log(chalk.bold('\n--- SKILLS Status ---\n'));
 
     // 1. Repositories
     const repos = getRepos();
