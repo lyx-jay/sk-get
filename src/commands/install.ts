@@ -172,11 +172,19 @@ export async function installCommand(
         await fs.ensureDir(librarySkillDir);
         await downloadDirectory(contents, librarySkillDir, repoUrl);
 
-        // 2. 创建 Symlink
+        // 2. 创建真实目录并在内部创建 Symlink，以提高 IDE 识别率
         if (await fs.pathExists(targetSkillDir)) {
           await fs.remove(targetSkillDir); // Remove existing copy or link
         }
-        await fs.ensureSymlink(librarySkillDir, targetSkillDir, 'dir');
+        await fs.ensureDir(targetSkillDir); // 创建真实目录
+
+        const files = await fs.readdir(librarySkillDir);
+        for (const file of files) {
+          const srcPath = path.join(librarySkillDir, file);
+          const destPath = path.join(targetSkillDir, file);
+          const stats = await fs.stat(srcPath);
+          await fs.ensureSymlink(srcPath, destPath, stats.isDirectory() ? 'dir' : 'file');
+        }
         console.log(chalk.green(`Successfully linked skill "${selectedSkill}" to ${targetSkillDir}`));
       } else {
         // Copy method
