@@ -3,4 +3,5 @@ src
 tsconfig.json
 .cursor
 .github
+assets
 *.ts
