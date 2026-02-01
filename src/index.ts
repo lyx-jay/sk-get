@@ -48,7 +48,7 @@ program
 program
   .command('add')
   .description('Add a skill to a specific platform (enters interactive mode if no arguments provided)')
-  .argument('[skill-name]', 'Name of the skill to install')
+  .argument('[skill-name]', 'Name of the skill to install (use commas for multiple: skill1,skill2)')
   .argument('[platform]', 'Target platform (choices: cursor, claude, vscode)')
   .option('-g, --global', 'Install to global directory (supported for cursor and claude)', false)
   .option('-m, --method <method>', 'Installation method (choices: link, copy)', 'link')
@@ -70,6 +70,7 @@ Note:
 Examples:
   ${chalk.gray('$')} sg add                       ${chalk.dim('# Enter interactive installation')}
   ${chalk.gray('$')} sg add git-commit cursor      ${chalk.dim('# Install via link (default)')}
+  ${chalk.gray('$')} sg add git-commit,vue cursor   ${chalk.dim('# Install multiple skills')}
   ${chalk.gray('$')} sg add git-commit cursor -m copy ${chalk.dim('# Install via copy')}
   ${chalk.gray('$')} sg add hello-world vscode    ${chalk.dim('# Add to VSCode instructions file')}
   `)
