@@ -38,6 +38,14 @@ sg status
 
 Displays the active repository, total number of configured repositories, and a list of installed skills across all platforms.
 
+### Installed Skills
+
+```bash
+sg installed  # or sg ins
+```
+
+Lists all installed skills in the current project and global environment in detail.
+
 ### Repository Management (Repo)
 
 ```bash

@@ -38,6 +38,14 @@ sg status
 
 显示当前激活的仓库、配置的仓库总数，以及在各个平台（Cursor, Claude, VSCode）已安装的技能列表。
 
+### 查看已安装技能 (Installed)
+
+```bash
+sg installed  # 或 sg ins
+```
+
+详细列出本地项目及全局环境下已安装的所有技能。
+
 ### 仓库管理 (Repo)
 
 ```bash
