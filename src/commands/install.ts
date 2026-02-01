@@ -13,6 +13,7 @@ import {
 } from '../utils/paths.js';
 import { getAllInstalledSkillsWithLocations } from '../utils/installed.js';
 import { getRepoUrl } from '../utils/config.js';
+import { detectPlatforms } from '../utils/platforms.js';
 
 async function downloadDirectory(contents: RepoContent[], targetDir: string, repoUrlOverride?: string) {
   for (const item of contents) {
@@ -35,7 +36,6 @@ async function performInstallation(
 ) {
   console.log(chalk.blue(`\nAdding skill "${skillName}" to ${platform} via ${method}...`));
   
-  // 获取该 skill 的内容
   const skillPath = `skills/${skillName}`;
   const contents = await fetchRepoContents(skillPath);
 
@@ -91,12 +91,10 @@ async function performInstallation(
       const { owner, repo } = parseRepoUrl(repoUrl);
       const librarySkillDir = path.join(getLibraryDir(), owner, repo, 'skills', skillName);
       
-      // 1. 下载到 Library
       console.log(chalk.dim(`Updating skill library at ${librarySkillDir}...`));
       await fs.ensureDir(librarySkillDir);
       await downloadDirectory(contents, librarySkillDir, repoUrl);
 
-      // 2. 创建真实目录并在内部创建 Symlink
       if (await fs.pathExists(targetSkillDir)) {
         await fs.remove(targetSkillDir); 
       }
@@ -111,7 +109,6 @@ async function performInstallation(
       }
       console.log(chalk.green(`Successfully linked skill "${skillName}" to ${targetSkillDir}`));
     } else {
-      // Copy method
       if (await fs.pathExists(targetSkillDir)) {
         await fs.remove(targetSkillDir);
       }
@@ -129,29 +126,62 @@ export async function installCommand(
 ) {
   try {
     let selectedSkills: string[] = [];
-    let selectedPlatform = platform;
+    let selectedPlatforms: string[] = [];
     let selectedMethod = options.method || 'link';
 
-    // 1. 如果没有提供 platform，进行交互式选择 (为了后面过滤已安装技能)
-    if (!selectedPlatform) {
-      const { Select } = enquirer as any;
-      const platformPrompt = new Select({
-        name: 'platform',
-        message: 'Select a target platform:',
-        choices: [
-          { name: 'cursor', message: 'Cursor' },
-          { name: 'claude', message: 'Claude' },
-          { name: 'vscode', message: 'VSCode' }
-        ]
-      });
-      selectedPlatform = await platformPrompt.run();
+    // 1. Detect and select platforms
+    if (platform) {
+      selectedPlatforms = platform.split(',').map(p => p.trim().toLowerCase());
+    } else {
+      const detected = await detectPlatforms();
+      const installed = detected.filter(p => p.isInstalled);
+      
+      if (installed.length === 1) {
+        const p = installed[0];
+        const { Confirm } = enquirer as any;
+        const confirmPrompt = new Confirm({
+          name: 'confirm',
+          message: `Only ${chalk.cyan(p.name)} detected. Install to ${p.name}?`,
+          initial: true
+        });
+        const ok = await confirmPrompt.run();
+        if (ok) {
+          selectedPlatforms = [p.id];
+        } else {
+           const { MultiSelect } = enquirer as any;
+           const prompt = new MultiSelect({
+             name: 'platforms',
+             message: 'Select target platform(s):',
+             choices: detected.map(d => ({ name: d.id, message: d.name }))
+           });
+           selectedPlatforms = await prompt.run();
+        }
+      } else {
+        const { MultiSelect } = enquirer as any;
+        const prompt = new MultiSelect({
+          name: 'platforms',
+          message: 'Select target platform(s):',
+          choices: detected.map(d => ({
+            name: d.id,
+            message: d.isInstalled ? d.name : `${d.name} ${chalk.dim('(not detected)')}`,
+            hint: d.isInstalled ? chalk.green('detected') : ''
+          })),
+          footer: chalk.dim('(Space to select, Enter to confirm)')
+        });
+        selectedPlatforms = await prompt.run();
+      }
+    }
+
+    if (selectedPlatforms.length === 0) {
+      console.log(chalk.yellow('No platforms selected.'));
+      return;
     }
 
     // 2. 获取技能列表
     if (skillName) {
       selectedSkills = skillName.split(',').map(s => s.trim()).filter(s => s !== '');
     } else {
-      console.log(chalk.blue('Fetching available skills...'));
+      console.log(chalk.blue('\nFetching available skills...'));
       const contents = await fetchRepoContents('skills');
       const skills = contents
         .filter(item => item.type === 'dir')
@@ -162,39 +192,42 @@ export async function installCommand(
         return;
       }
 
-      // 获取当前平台的标识名
-      let targetLocationName = '';
-      const platformKey = selectedPlatform!.toLowerCase();
-      if (platformKey === 'cursor') {
-        targetLocationName = options.global ? 'Cursor (Global)' : 'Cursor';
-      } else if (platformKey === 'claude') {
-        targetLocationName = options.global ? 'Claude (Global)' : 'Claude';
-      } else if (platformKey === 'vscode') {
-        targetLocationName = 'VSCode';
+      // 获取所选平台的目标位置标识
+      const targetLocations: string[] = [];
+      for (const p of selectedPlatforms) {
+        if (p === 'cursor') targetLocations.push(options.global ? 'Cursor (Global)' : 'Cursor');
+        else if (p === 'claude') targetLocations.push(options.global ? 'Claude (Global)' : 'Claude');
+        else if (p === 'vscode') targetLocations.push('VSCode');
       }
 
-      // 获取已安装技能及其位置
       const installedInfo = await getAllInstalledSkillsWithLocations();
 
       const { MultiSelect } = enquirer as any;
       const skillChoices = skills.map(name => {
         const locations = installedInfo[name] || [];
-        const isInstalledHere = locations.includes(targetLocationName);
+        // 如果在所有选中的平台上都已安装，则禁用
+        const installedOnSelected = targetLocations.filter(loc => locations.includes(loc));
+        const isFullyInstalled = installedOnSelected.length === targetLocations.length;
         
+        let msg = name;
+        if (isFullyInstalled) {
+          msg += ` ${chalk.dim('(already installed on all selected platforms)')}`;
+        } else if (installedOnSelected.length > 0) {
+          msg += ` ${chalk.dim(`(installed on: ${installedOnSelected.join(', ')})`)}`;
+        } else if (locations.length > 0) {
+          msg += ` ${chalk.dim(`(installed elsewhere: ${locations.join(', ')})`)}`;
+        }
+
         return {
           name,
-          message: isInstalledHere 
-            ? `${name} ${chalk.dim(`(already installed)`)}` 
-            : locations.length > 0 
-              ? `${name} ${chalk.dim(`(installed in: ${locations.join(', ')})`)}`
-              : name,
-          disabled: isInstalledHere ? chalk.yellow('Already installed on this platform') : false
+          message: msg,
+          disabled: isFullyInstalled ? chalk.yellow('Already installed') : false
         };
       });
 
       const skillPrompt = new MultiSelect({
         name: 'skills',
-        message: `Select skills to add to ${selectedPlatform}${options.global ? ' (Global)' : ''}:`,
+        message: `Select skills to add:`,
         choices: skillChoices,
         footer: chalk.dim('(Space to select, Enter to confirm)')
       });
@@ -206,9 +239,9 @@ export async function installCommand(
       return;
     }
 
-    // 3. 如果是 Cursor 或 Claude，且没有显式提供 method，进行交互式选择
-    const isVscode = selectedPlatform!.toLowerCase() === 'vscode';
-    if (!isVscode && !options.method) {
+    // 3. 如果包含 Cursor 或 Claude，且没有显式提供 method，进行交互式选择
+    const needsMethod = selectedPlatforms.some(p => p !== 'vscode');
+    if (needsMethod && !options.method) {
       const { Select } = enquirer as any;
       const methodPrompt = new Select({
         name: 'method',
@@ -223,14 +256,16 @@ export async function installCommand(
     }
 
     // 4. 执行所有安装
-    for (const name of selectedSkills) {
-      await performInstallation(name, selectedPlatform!, options.global, selectedMethod);
+    for (const p of selectedPlatforms) {
+      for (const name of selectedSkills) {
+        await performInstallation(name, p, options.global, selectedMethod);
+      }
     }
     
     console.log(chalk.green(`\n✔ All tasks completed!`));
 
   } catch (error: any) {
-    if (error === '') return; // Handle Enquirer cancellation
+    if (error === '') return; 
     console.error(chalk.red(`Error: ${error.message || error}`));
   }
 }
